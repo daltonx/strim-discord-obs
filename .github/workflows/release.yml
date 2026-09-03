@@ -1,0 +1,46 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  windows:
+    name: Windows (x64)
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        shell: pwsh
+        run: .github/scripts/Build-Windows.ps1 -Target x64 -Configuration Release
+      - name: Package
+        shell: pwsh
+        run: |
+          .github/scripts/Package-Windows.ps1 -Target x64 -Configuration Release
+          Move-Item release/obs-discord-striming-0.1.0-windows-x64.zip release/strim-discord-obs-windows-x64.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: release/strim-discord-obs-windows-x64.zip
+
+  publish:
+    name: Publish
+    needs: windows
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: windows
+          path: builds
+      - uses: softprops/action-gh-release@9d7c94cfd0a1f3ed45544c887983e9fa900f0564
+        with:
+          name: strim.ing Discord Activity
+          prerelease: true
+          files: |
+            builds/strim-discord-obs-windows-x64.zip
+            release-assets/strim-discord-obs-macos-arm64.zip
